@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#c7000b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AI口语教练">
+<title>AI口语教练 · 流利英语说出来</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --red:#c7000b; --red-deep:#a00009; --red-grad:linear-gradient(135deg,#e8342a,#c7000b);
+  --bg:#f5f6f8; --card:#ffffff; --ink:#1a1a1e; --ink2:#6b6f76; --line:#ececf0;
+  --green:#0aa858; --orange:#ff9f0a; --blue:#3b7cff;
+  --radius:18px; --shadow:0 4px 16px rgba(20,20,40,.06);
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{font-family:-apple-system,BlinkMacSystemFont,"HarmonyOS Sans SC","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+#app{max-width:480px;margin:0 auto;min-height:100vh;padding-bottom:calc(84px + var(--safe-b));position:relative}
+.view{display:none;animation:fadeIn .25s ease}
+.view.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes pop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes wave{0%,100%{height:8px}50%{height:26px}}
+
+/* 顶部 */
+.topbar{background:var(--red-grad);color:#fff;padding:calc(20px + env(safe-area-inset-top,0px)) 20px 20px;border-radius:0 0 26px 26px;position:relative;overflow:hidden}
+.topbar::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.08)}
+.topbar h1{font-size:22px;font-weight:700;letter-spacing:.5px}
+.topbar p{font-size:12.5px;opacity:.85;margin-top:3px}
+
+/* 卡片通用 */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin:14px 16px}
+.sect-title{font-size:16px;font-weight:700;margin:18px 20px 4px;display:flex;align-items:center;gap:6px}
+.sect-title .en{font-size:11px;color:var(--ink2);font-weight:400;margin-left:2px}
+
+/* 首页 */
+.hero-stats{display:flex;gap:12px;margin-top:-34px;position:relative;z-index:2}
+.stat{flex:1;background:#fff;border-radius:14px;box-shadow:var(--shadow);padding:12px 8px;text-align:center}
+.stat .num{font-size:20px;font-weight:800;color:var(--red)}
+.stat .lbl{font-size:11px;color:var(--ink2);margin-top:2px}
+.stat.gold .num{color:var(--orange)}
+.today-card{display:flex;align-items:center;gap:14px}
+.ring{width:74px;height:74px;flex-shrink:0;position:relative}
+.ring svg{transform:rotate(-90deg)}
+.ring .val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:15px;font-weight:800}
+.ring .val small{font-size:9px;color:var(--ink2);font-weight:400}
+.today-card .info{flex:1}
+.today-card .info b{font-size:15px}
+.today-card .info p{font-size:12px;color:var(--ink2);margin-top:4px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:12px;font-size:14px;font-weight:600;padding:11px 20px;cursor:pointer;transition:transform .15s,opacity .15s}
+.btn:active{transform:scale(.96)}
+.btn-red{background:var(--red-grad);color:#fff;box-shadow:0 6px 14px rgba(199,0,11,.25)}
+.btn-ghost{background:#fdeaea;color:var(--red)}
+.btn-sm{padding:8px 14px;font-size:13px;border-radius:10px}
+.sentence-day .en{font-size:17px;font-weight:700;line-height:1.45}
+.sentence-day .zh{font-size:13px;color:var(--ink2);margin-top:6px}
+.mod-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 16px}
+.mod{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:14px 6px;text-align:center;cursor:pointer;transition:transform .15s}
+.mod:active{transform:scale(.93)}
+.mod .ic{font-size:26px}
+.mod .nm{font-size:12px;font-weight:600;margin-top:6px}
+
+/* 场景列表 */
+.scen{display:flex;align-items:center;gap:14px;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:15px 16px;margin:12px 16px;cursor:pointer;transition:transform .15s}
+.scen:active{transform:scale(.98)}
+.scen .ic{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.scen .tx b{font-size:15.5px}
+.scen .tx p{font-size:12px;color:var(--ink2);margin-top:2px}
+.scen .cnt{margin-left:auto;font-size:12px;color:var(--ink2);background:var(--bg);padding:4px 10px;border-radius:99px}
+
+/* 跟读练习页 */
+.subheader{display:flex;align-items:center;gap:12px;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 6px}
+.back{width:34px;height:34px;border-radius:11px;background:#fff;box-shadow:var(--shadow);border:none;font-size:17px;cursor:pointer;flex-shrink:0}
+.subheader b{font-size:17px}
+.dots{display:flex;gap:6px;justify-content:center;margin:16px 0 0}
+.dot{width:8px;height:8px;border-radius:99px;background:#dcdce2;transition:all .2s}
+.dot.on{width:22px;background:var(--red)}
+.prac-card{margin-top:14px;text-align:center;padding:26px 20px}
+.prac-card .tag{font-size:11px;color:var(--red);background:#fdeaea;display:inline-block;padding:3px 12px;border-radius:99px;font-weight:600}
+.prac-card .en{font-size:21px;font-weight:800;line-height:1.5;margin-top:14px;letter-spacing:.2px}
+.prac-card .zh{font-size:13.5px;color:var(--ink2);margin-top:10px}
+.said-box{background:var(--bg);border-radius:12px;padding:12px;font-size:13.5px;color:var(--ink2);margin-top:14px;min-height:44px}
+.said-box b{color:var(--ink)}
+.mic-wrap{display:flex;justify-content:center;margin-top:22px}
+.mic-btn{width:78px;height:78px;border-radius:50%;border:none;background:var(--red-grad);color:#fff;font-size:30px;cursor:pointer;box-shadow:0 10px 24px rgba(199,0,11,.35);transition:transform .2s;position:relative}
+.mic-btn.listening{animation:pulse 1.1s infinite;background:linear-gradient(135deg,#ff6055,#e8342a)}
+.mic-hint{font-size:12px;color:var(--ink2);text-align:center;margin-top:10px}
+.result{margin-top:18px;animation:pop .3s ease}
+.score-big{font-size:42px;font-weight:900;line-height:1}
+.score-c{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px}
+.stars{font-size:20px;letter-spacing:2px}
+.verdict{font-size:13px;font-weight:700;color:var(--red)}
+.wdiff{margin-top:10px;font-size:16.5px;font-weight:700;line-height:1.9}
+.w-ok{color:var(--green)}
+.w-miss{color:#e0483e;text-decoration:underline wavy #ffb4ae 1.5px}
+.prac-actions{display:flex;gap:10px;margin-top:18px}
+.prac-actions .btn{flex:1}
+
+/* 对话页 */
+.chat-list{margin:0 16px}
+.bub{max-width:82%;padding:11px 15px;border-radius:18px;font-size:14.5px;margin:10px 0;animation:fadeIn .3s;position:relative}
+.bub.bot{background:#fff;box-shadow:var(--shadow);border-top-left-radius:5px;margin-right:auto}
+.bub.me{background:var(--red-grad);color:#fff;border-top-right-radius:5px;margin-left:auto}
+.bub .zz{display:block;font-size:11.5px;opacity:.65;margin-top:4px}
+.chat-actions{display:flex;gap:10px;align-items:center;justify-content:center;margin:16px 0}
+.tip-chip{background:#fff7ec;color:#b06200;font-size:12px;border-radius:99px;padding:8px 14px;box-shadow:var(--shadow)}
+.typing{display:inline-flex;gap:4px;align-items:flex-end;height:26px;padding:4px 2px}
+.typing i{width:5px;background:#c9c9d4;border-radius:3px;animation:wave 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+
+/* 生词本 */
+.word-item{display:flex;align-items:center;gap:12px;background:#fff;border-radius:14px;box-shadow:var(--shadow);padding:14px 16px;margin:10px 16px}
+.word-item .w{flex:1}
+.word-item .w b{font-size:15px}
+.word-item .w p{font-size:12px;color:var(--ink2);margin-top:3px}
+.word-item .w .en{font-size:13px;color:var(--ink);font-weight:600;margin-top:2px}
+.play-mini{width:36px;height:36px;border-radius:11px;border:none;background:#fdeaea;color:var(--red);font-size:15px;cursor:pointer;flex-shrink:0}
+.del-mini{width:36px;height:36px;border-radius:11px;border:none;background:var(--bg);color:var(--ink2);font-size:15px;cursor:pointer;flex-shrink:0}
+.empty{text-align:center;padding:60px 20px;color:var(--ink2)}
+.empty .e{font-size:46px;margin-bottom:12px}
+.empty p{font-size:13.5px}
+
+/* 我的 */
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:15px 2px;border-bottom:1px solid var(--line);font-size:14.5px}
+.set-row:last-child{border:none}
+.set-row input[type=range]{width:150px;accent-color:var(--red)}
+.set-row .v{color:var(--red);font-weight:700;font-variant-numeric:tabular-nums}
+.me-hero{background:var(--red-grad);margin:0 16px;border-radius:var(--radius);color:#fff;padding:22px;display:flex;align-items:center;gap:16px}
+.avatar{width:58px;height:58px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;background:rgba(255,255,255,.18);padding:3px 10px;border-radius:99px;margin-top:4px}
+
+/* 底部导航 */
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);display:flex;padding-bottom:var(--safe-b);z-index:50}
+.tab{flex:1;border:none;background:none;padding:9px 0 7px;font-size:10.5px;color:var(--ink2);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:600}
+.tab .ti{font-size:21px;filter:grayscale(1);opacity:.55;transition:all .2s}
+.tab.on{color:var(--red)}
+.tab.on .ti{filter:none;opacity:1;transform:translateY(-1px)}
+
+/* 弹层 */
+.toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:rgba(20,20,26,.88);color:#fff;font-size:13px;padding:10px 20px;border-radius:99px;z-index:99;animation:pop .25s;white-space:nowrap}
+@media(min-width:481px){body{background:#ececf2}#app{background:var(--bg);box-shadow:0 0 40px rgba(0,0,0,.08)}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ========== 首页 ========== -->
+  <section class="view" data-view="home">
+    <div class="topbar">
+      <h1>AI口语教练 <span style="font-size:13px;font-weight:400;opacity:.8">Speak Coach</span></h1>
+      <p>每天开口 10 分钟，流利英语说出来</p>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="num" id="h-streak">0</div><div class="lbl">连续打卡 🔥</div></div>
+      <div class="stat gold"><div class="num" id="h-today">0</div><div class="lbl">今日已练 / <span id="h-goal">10</span></div></div>
+      <div class="stat"><div class="num" id="h-total">0</div><div class="lbl">累计句子</div></div>
+    </div>
+
+    <div class="card today-card">
+      <div class="ring" id="ring"></div>
+      <div class="info">
+        <b id="today-title">开始今天的练习吧</b>
+        <p>跟读 + AI对话，完成今日目标</p>
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <button class="btn btn-red btn-sm" onclick="go('practice')">去跟读</button>
+          <button class="btn btn-ghost btn-sm" onclick="go('chat')">AI对话</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sect-title">今日一句 <span class="en">Sentence of the day</span></div>
+    <div class="card sentence-day" id="daily-sentence"></div>
+
+    <div class="sect-title">学习模块 <span class="en">Modules</span></div>
+    <div class="mod-grid" id="mod-grid"></div>
+
+    <div class="card" style="display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#fff8f2,#fff);border:1px solid #ffe3c8">
+      <div style="font-size:30px">🎯</div>
+      <div style="flex:1">
+        <b style="font-size:14px">AI 实时口语对话</b>
+        <p style="font-size:12px;color:var(--ink2);margin-top:2px">沉浸式场景演练，说错了会给你提示</p>
+      </div>
+      <button class="btn btn-red btn-sm" onclick="go('chat')">进入</button>
+    </div>
+  </section>
+
+  <!-- ========== 口语跟读 ========== -->
+  <section class="view" data-view="practice">
+    <div id="prac-list"></div>
+    <div id="prac-session" style="display:none"></div>
+  </section>
+
+  <!-- ========== AI 对话 ========== -->
+  <section class="view" data-view="chat">
+    <div id="chat-list"></div>
+    <div id="chat-room" style="display:none"></div>
+  </section>
+
+  <!-- ========== 生词本 ========== -->
+  <section class="view" data-view="words">
+    <div class="topbar" style="border-radius:0">
+      <h1>生词本</h1>
+      <p>收藏难句，反复听读攻克它</p>
+    </div>
+    <div id="word-list"></div>
+  </section>
+
+  <!-- ========== 我的 ========== -->
+  <section class="view" data-view="me">
+    <div class="topbar" style="border-radius:0">
+      <h1>我的</h1>
+      <p>学习数据与设置</p>
+    </div>
+    <div class="me-hero">
+      <div class="avatar">🗣️</div>
+      <div>
+        <b style="font-size:17px">口语学习者</b>
+        <div class="badge">🔥 已连续 <span id="me-streak">0</span> 天</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="set-row"><span>📅 累计练习</span><span class="v"><span id="me-total">0</span> 句</span></div>
+      <div class="set-row"><span>⭐ 平均得分</span><span class="v" id="me-avg">--</span></div>
+      <div class="set-row"><span>⭐ 收藏句子</span><span class="v" id="me-words">0</span></div>
+    </div>
+    <div class="card">
+      <div class="set-row"><span>🎯 每日目标（句）</span>
+        <input type="range" min="3" max="30" id="set-goal" oninput="saveGoal(this.value)">
+        <span class="v" id="goal-v"></span></div>
+      <div class="set-row"><span>🐢 朗读语速</span>
+        <input type="range" min="5" max="15" id="set-rate" oninput="saveRate(this.value)">
+        <span class="v" id="rate-v"></span></div>
+      <div class="set-row"><span>🤖 朗读音色</span><span class="v" id="voice-name">默认</span></div>
+    </div>
+    <div class="card">
+      <div class="set-row" style="cursor:pointer" onclick="installApp()"><span>📲 安装到手机桌面</span><span style="color:var(--red);font-weight:700" id="install-state">→</span></div>
+      <div class="set-row" style="cursor:pointer" onclick="if(confirm('清空所有学习记录？此操作不可恢复。')){localStorage.removeItem('aec_data');location.reload()}"><span>🗑️ 清空学习数据</span><span style="color:var(--ink2)">→</span></div>
+    </div>
+    <p style="text-align:center;font-size:11px;color:var(--ink2);padding:8px 0 20px">AI口语教练 v1.0 · 纯本地运行，数据仅保存在本机</p>
+  </section>
+</div>
+
+<!-- 底部导航 -->
+<nav class="tabbar">
+  <button class="tab on" data-tab="home" onclick="go('home')"><span class="ti">🏠</span>首页</button>
+  <button class="tab" data-tab="practice" onclick="go('practice')"><span class="ti">🎤</span>跟读</button>
+  <button class="tab" data-tab="chat" onclick="go('chat')"><span class="ti">💬</span>AI对话</button>
+  <button class="tab" data-tab="words" onclick="go('words')"><span class="ti">📖</span>生词本</button>
+  <button class="tab" data-tab="me" onclick="go('me')"><span class="ti">👤</span>我的</button>
+</nav>
+
+<script>
+/* ============================================================
+   数据：场景与句子库
+============================================================ */
+const SCENARIOS=[
+ {id:'daily',name:'日常寒暄',icon:'👋',color:'#fff3e0',intro:'打招呼、自我介绍、日常闲聊',s:[
+  {e:"Hi, it's really nice to meet you.",z:"你好，很高兴认识你。"},
+  {e:"How's your day going so far?",z:"你今天过得怎么样？"},
+  {e:"I've been pretty busy with work lately.",z:"我最近工作挺忙的。"},
+  {e:"What do you usually do on weekends?",z:"你周末一般做什么？"},
+  {e:"Sorry, could you say that again more slowly?",z:"不好意思，能慢一点再说一遍吗？"},
+  {e:"It was great catching up with you.",z:"和你聊得很开心。"},
+  {e:"Let's keep in touch. Take care!",z:"保持联系，保重！"},
+  {e:"I really appreciate your help.",z:"非常感谢你的帮助。"}]},
+ {id:'travel',name:'机场旅行',icon:'✈️',color:'#e3f2fd',intro:'值机、安检、问路、酒店',s:[
+  {e:"I'd like to check in for the flight to London.",z:"我想办理飞往伦敦航班的值机。"},
+  {e:"Excuse me, where is the boarding gate?",z:"打扰一下，请问登机口在哪里？"},
+  {e:"I have one suitcase to check in.",z:"我有一个行李箱要托运。"},
+  {e:"Could you tell me how to get to the city center?",z:"请问怎么到市中心？"},
+  {e:"I have a reservation under the name Li Ming.",z:"我有一个预订，名字是李明。"},
+  {e:"What time is check-out at this hotel?",z:"这家酒店退房时间是几点？"},
+  {e:"Is there free Wi-Fi in the lobby?",z:"大堂有免费无线网络吗？"},
+  {e:"I'd like to extend my stay for one more night.",z:"我想多住一晚，延长一下住宿。"}]},
+ {id:'food',name:'餐厅点餐',icon:'🍽️',color:'#e8f5e9',intro:'点菜、结账、外卖对话',s:[
+  {e:"Could I see the menu, please?",z:"请给我看下菜单好吗？"},
+  {e:"I'd like my steak medium rare, please.",z:"我的牛排请做三分熟。"},
+  {e:"Could I have some water and more napkins?",z:"能给我一些水和更多餐巾纸吗？"},
+  {e:"What do you recommend here?",z:"这里有什么推荐的吗？"},
+  {e:"This is delicious, but a little too spicy for me.",z:"很好吃，但对我来说有点太辣了。"},
+  {e:"Could we get the check, please? It's on me.",z:"请给我们结账，我来请客。"},
+  {e:"I'd like this to go, please.",z:"这个请帮我打包带走。"},
+  {e:"Do you take credit cards or mobile payment?",z:"你们收信用卡或者手机支付吗？"}]},
+ {id:'interview',name:'求职面试',icon:'💼',color:'#ede7f6',intro:'英文面试高频问题',s:[
+  {e:"Thank you for giving me this opportunity today.",z:"感谢您今天给我这个机会。"},
+  {e:"I have three years of experience in data analysis.",z:"我有三年数据分析经验。"},
+  {e:"My biggest strength is problem-solving under pressure.",z:"我最大的优势是抗压解决问题的能力。"},
+  {e:"I work well both independently and in a team.",z:"我既能独立工作也能很好地团队协作。"},
+  {e:"I'm always eager to learn new technologies.",z:"我总是渴望学习新技术。"},
+  {e:"That's a great question. Let me think for a second.",z:"这个问题很好，让我想一下。"},
+  {e:"Could you tell me more about the team I'd be joining?",z:"您能多介绍一下我将加入的团队吗？"},
+  {e:"I look forward to hearing from you soon.",z:"期待尽快收到您的答复。"}]},
+ {id:'business',name:'商务会议',icon:'📊',color:'#e0f2f1',intro:'开会、汇报、邮件跟进',s:[
+  {e:"Let me walk you through today's agenda.",z:"我来介绍一下今天的议程。"},
+  {e:"Could we schedule a follow-up meeting next week?",z:"我们下周能安排一个跟进会议吗？"},
+  {e:"I'll send you the details by email after this meeting.",z:"会后我把详情发邮件给你。"},
+  {e:"Sorry to interrupt, but I have a quick question.",z:"抱歉打断一下，我有个小问题。"},
+  {e:"We're on the same page regarding the timeline.",z:"关于时间表我们意见一致。"},
+  {e:"Let's touch base again after we review the data.",z:"我们看完数据后再联系。"},
+  {e:"That sounds like a solid plan to me.",z:"我觉得这个计划很稳妥。"},
+  {e:"Please don't hesitate to reach out if anything is unclear.",z:"如有任何不清楚的，随时联系我。"}]},
+ {id:'shopping',name:'购物砍价',icon:'🛍️',color:'#fce4ec',intro:'买衣服、退换货、比价',s:[
+  {e:"I'm just looking around, thank you.",z:"我只是随便看看，谢谢。"},
+  {e:"Do you have this in a larger size?",z:"这个有大一号的吗？"},
+  {e:"Is this on sale right now?",z:"这个现在有折扣吗？"},
+  {e:"That's a bit out of my budget. Can you do any better on the price?",z:"这有点超出我的预算了，价格还能再优惠点吗？"},
+  {e:"I'd like to return this. Here's my receipt.",z:"我想退掉这个，这是我的小票。"},
+  {e:"Can I try these shoes on?",z:"这双鞋我能试穿一下吗？"},
+  {e:"I'll take it. Can I pay by card?",z:"我买了，可以刷卡吗？"},
+  {e:"Could you gift-wrap it for me, please?",z:"能帮我包装成礼品吗？"}]}
+];
+
+/* AI 场景对话剧本：bot 说一句 → 引导用户回答 → 检查关键词 */
+const CHAT_SCENES=[
+ {id:'checkin',name:'✈️ 机场值机',desc:'和地勤完成一次完整的值机对话',color:'#e3f2fd',steps:[
+  {b:"Good morning! May I see your passport and ticket, please?",hint:'礼貌地递上证件，说 "Here you are" 或 "Sure, here you go."',sample:"Sure, here you go.",kw:['sure','here','passport','ticket']},
+  {b:"Thank you. Are you checking any bags today?",hint:'你有一个行李箱要托运：I have one suitcase to check in.',sample:"I have one suitcase to check in.",kw:['suitcase','bag','one','check']},
+  {b:"No problem. Would you prefer a window or an aisle seat?",hint:'选个座位：window / aisle seat',sample:"A window seat, please.",kw:['window','aisle','seat']},
+  {b:"Great choice. Here's your boarding pass — you'll be boarding at gate B12.",hint:'礼貌回应并确认登机口',sample:"Thank you. Could you tell me where gate B12 is?",kw:['thank','gate','where','b12']},
+  {b:"It's straight ahead, then turn left after the coffee shop. Boarding starts at 9:40. Have a wonderful flight!",hint:'最后致谢，祝对方一天愉快',sample:"Thank you so much. You have a great day too!",kw:['thank','too','great','you']} ]},
+ {id:'order',name:'🍽️ 餐厅点餐',desc:'在美国餐厅完成一次完整点餐',color:'#e8f5e9',steps:[
+  {b:"Hi, welcome in! Table for one?",hint:'确认人数：yes / just me / for two',sample:"Yes, just me please.",kw:['yes','one','just','me','two']},
+  {b:"Right this way. Can I start you off with something to drink?",hint:'点一杯喝的，如 iced water / lemonade / coffee',sample:"I'll have an iced water, please.",kw:['water','drink','coffee','juice','tea','lemonade']},
+  {b:"Great. Our special today is grilled salmon with rice. Are you ready to order?",hint:'点今天特色菜：I’d like to try the salmon special, please.',sample:"I'd like to try the salmon special, please.",kw:['salmon','special','try','order','grilled']},
+  {b:"Excellent choice! How would you like that cooked — and any allergies I should know about?",hint:'说明口味偏好，比如 no peanuts（不吃花生）',sample:"No allergies, but not too spicy please.",kw:['no','spicy','medium','allerg','peanut']},
+  {b:"Perfect, I'll put that right in. Enjoy your meal — I'll check back in a bit!",hint:'表达感谢',sample:"Thank you very much!",kw:['thank','thanks']} ]},
+ {id:'smalltalk',name:'👋 自由闲聊',desc:'和 AI 外教随意聊天，想到什么说什么',color:'#fff3e0',free:true},
+];
+
+/* 自由闲聊的意图匹配库 */
+const INTENTS=[
+ {k:['hello','hi','hey','morning','afternoon','evening'],r:["Hey there! Great to hear your voice. How's your day going?","Hi! I love hearing you practice. What did you do today?"]},
+ {k:['how are you','how about you','and you'],r:["I'm doing fantastic, thanks for asking! Now tell me — what made you smile today?","Never better! But enough about me. What's new with you?"]},
+ {k:['my name is','i am','call me','you can call me'],r:["That's a great name! I'm Coach, your AI English tutor. So — what do you want to practice today?","Nice to meet you! I hope we can practice together every day."]},
+ {k:['weather','rain','sunny','snow','hot','cold'],r:["I love talking about weather! A perfect day for practice, isn't it? What's your favorite season?","Interesting! In my ideal world it's always sunny. What do you like to do on rainy days?"]},
+ {k:['food','lunch','dinner','breakfast','eat','hungry','cook'],r:["Now I'm hungry! What's your favorite dish? Can you describe it in English?","Food is the best topic! What did you have for lunch today?"]},
+ {k:['work','job','busy','tired','meeting','project'],r:["Sounds like a busy day! Work can be exhausting. What do you do to relax after work?","I feel you. Try saying: 'I've been swamped with work lately.' What's your job like?"]},
+ {k:['hobby','like','love','enjoy','weekend','free time','music','movie','book','game','sport'],r:["That sounds fun! Tell me more — when did you start?","Nice! Here's a challenge: describe it in three English sentences. Go!"]},
+ {k:['travel','trip','vacation','flight','country','visit','abroad'],r:["I love traveling too! What's the most amazing place you've ever been?","Where would you go if you could fly anywhere tomorrow?"]},
+ {k:['study','english','learn','practice','difficult','hard'],r:["You're already doing great by speaking up! What part of English is hardest for you — speaking, listening, or grammar?","Practice makes perfect. The fact that you're talking to me means you're improving right now!"]},
+ {k:['china','chinese','beijing','shanghai','guangzhou','shenzhen','tea'],r:["China is an amazing country! I'd love to visit one day. Which city do you live in?","Chinese culture is fascinating! Can you tell me one thing you love about your hometown?"]},
+ {k:['thank','thanks','appreciate'],r:["You're very welcome! It's my pleasure to practice with you. Anything else on your mind?","Anytime! Keep up the great work — your pronunciation is getting better every day."]},
+ {k:['bye','goodbye','see you','good night','later'],r:["It was great chatting with you! Come back tomorrow — consistency is everything. See you!","Goodbye for now! Remember: ten minutes of speaking a day keeps the awkward English away. 👋"]},
+ {k:['sorry','bad','wrong','mistake'],r:["No apologies needed — mistakes are how we learn! Try again, a bit slower this time. You've got this!","That's totally fine! Even native speakers stumble. Take a breath and try once more."]},
+];
+const FALLBACK=["Interesting! Could you tell me more about that?","I see. And how did that make you feel?","That's a good point. Could you say it in a different way?","Nice try! Here's a tip: try adding 'because...' to make your sentence longer."];
+
+/* ============================================================
+   状态与持久化
+============================================================ */
+const D=new Date().toISOString().slice(0,10);
+let data=JSON.parse(localStorage.getItem('aec_data')||'null')||{
+  streak:0,lastDay:'',todayCount:0,total:0,scoreSum:0,scoreN:0,words:[],goal:10,rate:10,history:{}
+};
+if(data.lastDay!==D){ if(data.lastDay&&isYest(data.lastDay)&&data.todayCount>0){} else if(data.lastDay!==D){} }
+function isYest(d){const y=new Date(Date.now()-864e5).toISOString().slice(0,10);return d===y}
+function save(){localStorage.setItem('aec_data',JSON.stringify(data))}
+function countToday(){
+  if(data.lastDay!==D){ // 新的一天
+    if(isYest(data.lastDay)&&data.todayCount>0) data.streak=data.streak; // 保留，若昨天有打卡
+    if(!(isYest(data.lastDay)&&data.todayCount>0)) data.streak=0;
+    data.todayCount=0; data.lastDay=D;
+  }
+}
+countToday();
+
+let cur={tab:'home',scen:null,idx:0,chat:null,step:0,listening:false,lastTranscript:''};
+let deferredPrompt=null,activeRec=null;
+
+/* ============================================================
+   工具函数
+============================================================ */
+const $=s=>document.querySelector(s);
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(t){const el=document.createElement('div');el.className='toast';el.textContent=t;document.body.appendChild(el);setTimeout(()=>el.remove(),2200)}
+
+function go(tab){
+  cur.tab=tab;
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.dataset.view===tab));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===tab));
+  if(tab==='home')renderHome();
+  if(tab==='practice')renderScenList();
+  if(tab==='chat')renderChatList();
+  if(tab==='words')renderWords();
+  if(tab==='me')renderMe();
+  window.scrollTo(0,0);
+}
+
+/* ---------- TTS ---------- */
+function speak(text,rate){
+  try{
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang='en-US';
+    const vs=speechSynthesis.getVoices().filter(v=>v.lang&&v.lang.startsWith('en'));
+    if(vs.length){const pref=vs.find(v=>/Google US|Samantha|Aria|Jenny/i.test(v.name))||vs[0];u.voice=pref;$('#voice-name').textContent=pref.name.slice(0,14)}
+    u.rate=Math.max(.5,(rate||data.rate)/10);
+    speechSynthesis.cancel();speechSynthesis.speak(u);
+  }catch(e){toast('此浏览器不支持语音朗读')}
+}
+
+/* ---------- 语音识别 ---------- */
+const SRC=window.SpeechRecognition||window.webkitSpeechRecognition;
+function listenOnce(onResult,onEnd){
+  if(!SRC){toast('当前浏览器不支持语音识别，请用 Chrome / Safari 打开');onEnd&&onEnd();return}
+  if(activeRec){activeRec.abort();activeRec=null}
+  const r=new SRC();activeRec=r;
+  r.lang='en-US';r.interimResults=true;r.maxAlternatives=1;
+  let fin='';
+  r.onresult=e=>{let interim='';
+    for(let i=0;i<e.results.length;i++){if(e.results[i].isFinal)fin+=e.results[i][0].transcript+' ';else interim+=e.results[i][0].transcript}
+    if(interim&&onResult)onResult(interim,true);
+  };
+  r.onerror=e=>{if(e.error==='not-allowed')toast('麦克风权限被拒绝，请在浏览器设置中允许');else if(e.error==='no-speech')toast('没听清，再试一次吧');onEnd&&onEnd()};
+  r.onend=()=>{if(activeRec===r)activeRec=null;if(onResult&&fin.trim())onResult(fin.trim(),false);else if(onEnd)onEnd()};
+  try{r.start()}catch(e){}
+}
+
+/* ---------- 发音评分（词级 LCS 匹配） ---------- */
+function norm(s){return s.toLowerCase().replace(/[^a-z0-9'\s]/g,' ').replace(/\s+/g,' ').trim()}
+function words(s){return norm(s)?norm(s).split(' '):[]}
+function scoreSpeech(target,said){
+  const t=words(target),s=words(said);
+  if(!t.length)return{score:0,mask:[]};
+  if(!s.length)return{score:0,mask:t.map(()=>false)};
+  const n=t.length,m=s.length;
+  const dp=Array.from({length:n+1},()=>new Array(m+1).fill(0));
+  for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)
+    dp[i][j]=t[i]===s[j]?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
+  const mask=new Array(n).fill(false);
+  let i=0,j=0;
+  while(i<n&&j<m){ if(t[i]===s[j]){mask[i]=true;i++;j++;} else if(dp[i+1][j]>=dp[i][j+1])i++; else j++; }
+  const matched=mask.filter(Boolean).length;
+  let score=Math.round(matched/t.length*100);
+  const extra=Math.max(0,s.length-n); score=Math.max(0,score-Math.round(extra*2.5));
+  return{score,mask};
+}
+function starsOf(sc){return sc>=90?3:sc>=75?2:sc>=50?1:0}
+function verdictOf(sc){return sc>=90?'完美！发音地道 🎉':sc>=75?'很棒！注意标红的词':sc>=50?'不错，再练一遍会更顺':sc>0?'别灰心，慢一点再试一次':'没能识别到语音'}
+
+/* ---------- 学习记录 ---------- */
+function record(score){
+  countToday();
+  data.todayCount++;data.total++;
+  if(data.todayCount===1){data.streak=(isYest(data.lastDay))?data.streak+1:1}
+  data.lastDay=D;
+  data.scoreSum+=score;data.scoreN++;
+  save();
+}
+
+/* ============================================================
+   首页
+============================================================ */
+function renderHome(){
+  countToday();save();
+  $('#h-streak').textContent=data.streak;
+  $('#h-today').textContent=data.todayCount;
+  $('#h-goal').textContent=data.goal;
+  $('#h-total').textContent=data.total;
+  // 进度环
+  const pct=Math.min(1,data.todayCount/data.goal),C=2*Math.PI*31;
+  $('#ring').innerHTML=`<svg width="74" height="74"><circle cx="37" cy="37" r="31" fill="none" stroke="#f0e6e6" stroke-width="7"/><circle cx="37" cy="37" r="31" fill="none" stroke="url(#g1)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C*pct} ${C}"/><defs><linearGradient id="g1"><stop offset="0" stop-color="#ff7d5c"/><stop offset="1" stop-color="#c7000b"/></linearGradient></defs></svg><div class="val">${Math.round(pct*100)}%<small>今日进度</small></div>`;
+  $('#today-title').textContent=data.todayCount>=data.goal?'今日目标已达成 🎉':`已完成 ${data.todayCount} / ${data.goal} 句`;
+  // 每日一句：按日期随机
+  const all=[];SCENARIOS.forEach(sc=>sc.s.forEach(x=>all.push({...x,sc:sc.name})));
+  const seed=Number(D.replace(/-/g,''))%all.length;
+  const sent=all[seed];
+  $('#daily-sentence').innerHTML=`<div class="en">${esc(sent.e)}</div><div class="zh">${esc(sent.z)} · ${sent.sc}</div>
+   <div style="display:flex;gap:10px;margin-top:14px">
+     <button class="btn btn-ghost btn-sm" onclick="speak('${sent.e.replace(/'/g,"\\'")}')">🔊 听朗读</button>
+     <button class="btn btn-red btn-sm" onclick="quickPrac(${seed})">🎤 跟读这句</button></div>`;
+  // 模块
+  $('#mod-grid').innerHTML=[['practice','🎤','跟读'],['chat','💬','AI对话'],['words','📖','生词本'],['me','📈','统计']]
+    .map(m=>`<div class="mod" onclick="go('${m[0]}')"><div class="ic">${m[1]}</div><div class="nm">${m[2]}</div></div>`).join('');
+}
+function quickPrac(seed){
+  go('practice');cur.scen=SCENARIOS.find(s=>s.id==='daily');
+  // 直接进入跟读这一句对应的临时会话
+  const all=[];SCENARIOS.forEach(sc=>sc.s.forEach(x=>all.push(x)));
+  cur.quickIdx=seed;openSession();
+}
+
+/* ============================================================
+   跟读：场景列表
+============================================================ */
+function renderScenList(){
+  $('#prac-list').style.display='block';$('#prac-session').style.display='none';
+  $('#prac-list').innerHTML=`<div class="subheader"><b>口语跟读</b><span style="font-size:12px;color:var(--ink2);margin-left:auto">AI 实时打分</span></div>
+  ${SCENARIOS.map(s=>`<div class="scen" onclick="openScen('${s.id}')">
+    <div class="ic" style="background:${s.color}">${s.icon}</div>
+    <div class="tx"><b>${s.name}</b><p>${s.intro}</p></div>
+    <div class="cnt">${s.s.length} 句</div></div>`).join('')}`;
+}
+function openScen(id){cur.scen=SCENARIOS.find(s=>s.id===id);cur.quickIdx=null;openSession()}
+function openSession(){
+  cur.idx=cur.quickIdx!=null?(cur.quickIdx%cur.scen.s.length):0;
+  $('#prac-list').style.display='none';$('#prac-session').style.display='block';
+  renderSentence();
+}
+function renderSentence(){
+  const s=cur.scen.s[cur.idx],last=cur.idx>=cur.scen.s.length-1;
+  const dots=cur.scen.s.map((_,i)=>`<div class="dot${i===cur.idx?' on':''}"></div>`).join('');
+  $('#prac-session').innerHTML=`
+   <div class="subheader"><button class="back" onclick="renderScenList()">←</button><b>${cur.scen.icon} ${cur.scen.name}</b></div>
+   <div class="dots">${dots}</div>
+   <div class="card prac-card">
+     <span class="tag">第 ${cur.idx+1} / ${cur.scen.s.length} 句</span>
+     <div class="en" id="p-en">${esc(s.e)}</div>
+     <div class="zh">${esc(s.z)}</div>
+     <div style="display:flex;gap:10px;justify-content:center;margin-top:18px">
+       <button class="btn btn-ghost btn-sm" onclick='speak(${esc(JSON.stringify(s.e))})'>🔊 听标准音</button>
+       <button class="btn btn-ghost btn-sm" onclick="toggleWord()" id="hide-btn"></button>
+     </div>
+     <div class="said-box" id="said-box">点击下方麦克风，大声读出这句话 🎤</div>
+     <div id="p-result"></div>
+     <div class="mic-wrap"><button class="mic-btn" id="mic" onclick="micTap()">🎤</button></div>
+     <div class="mic-hint" id="mic-hint">点击开始录音</div>
+     <div class="prac-actions">
+       <button class="btn btn-ghost" onclick="starThis()">⭐ 收藏</button>
+       <button class="btn btn-ghost" onclick="prevS()">上一句</button>
+       <button class="btn btn-red" onclick="nextS()">${last?'完成 ✔':'下一句 →'}</button>
+     </div>
+   </div>`;
+  updateHideBtn();
+}
+function toggleWord(){cur.hide=!cur.hide;updateHideBtn()}
+function updateHideBtn(){
+  const s=cur.scen.s[cur.idx],b=$('#hide-btn');
+  if(!b)return; b.textContent=cur.hide?'👀 显示中文':'🙈 隐藏中文';
+  const zh=$('.prac-card .zh'); if(zh)zh.style.visibility=cur.hide?'hidden':'visible';
+}
+function prevS(){if(cur.idx>0){cur.idx--;renderSentence()}}
+function nextS(){
+  if(cur.idx<cur.scen.s.length-1){cur.idx++;renderSentence()}
+  else{toast('本场景完成！🎉');renderScenList()}
+}
+function starThis(){
+  const s=cur.scen.s[cur.idx];
+  if(data.words.some(w=>w.e===s.e)){toast('已收藏过啦');return}
+  data.words.unshift({e:s.e,z:s.z,sc:cur.scen.name,t:Date.now()});save();
+  toast('⭐ 已加入生词本');
+}
+function micTap(){
+  if(cur.listening){if(activeRec)activeRec.stop();return}
+  const s=cur.scen.s[cur.idx];
+  cur.listening=true;cur.lastTranscript='';
+  $('#mic').classList.add('listening');$('#mic').textContent='⏹';
+  $('#mic-hint').textContent='正在听你说…（说完自动停止）';
+  $('#said-box').innerHTML='<b>👂 听到了：</b> <i>…</i>';
+  listenOnce(
+    (txt,interim)=>{
+      if(interim){$('#said-box').innerHTML=`<b>👂 听到了：</b> ${esc(txt)}…`}
+      else{
+        cur.lastTranscript=txt;
+        $('#said-box').innerHTML=`<b>👂 你说的是：</b> ${esc(txt)}`;
+        const{score,mask}=scoreSpeech(s.e,txt);
+        showResult(score,mask,s.e);
+      }
+    },
+    ()=>{micDone()}
+  );
+  // 12秒超时保护
+  clearTimeout(cur.timer);cur.timer=setTimeout(()=>{if(activeRec)activeRec.stop()},12000);
+}
+function micDone(){
+  cur.listening=false;
+  const m=$('#mic');if(m){m.classList.remove('listening');m.textContent='🎤';}
+  const h=$('#mic-hint');if(h)h.textContent='点击开始录音';
+}
+function showResult(score,mask,en){
+  micDone();
+  record(score);
+  const tw=words(en).map((w,i)=>`<span class="${mask[i]?'w-ok':'w-miss'}">${esc(w)}</span>`).join(' ');
+  const st=starsOf(score),stars='⭐'.repeat(st)+'☆'.repeat(3-st);
+  $('#p-result').innerHTML=`<div class="result">
+    <div class="score-c"><div><div class="score-big" style="color:${score>=75?'var(--green)':score>=50?'var(--orange)':'#e0483e'}">${score}</div><div class="stars">${stars}</div></div>
+    <div class="verdict">${verdictOf(score)}</div></div>
+    <div style="font-size:11.5px;color:var(--ink2);text-align:center;margin-bottom:6px">标准句（<span class="w-ok">绿色</span> 读对了 · <span class="w-miss">红色</span> 需改进）</div>
+    <div class="wdiff" style="text-align:center">${tw}</div></div>`;
+  if(cur.tab==='home'||cur.tab==='me')return;
+}
+
+/* ============================================================
+   AI 对话
+============================================================ */
+function renderChatList(){
+  $('#chat-list').style.display='block';$('#chat-room').style.display='none';
+  $('#chat-list').innerHTML=`<div class="subheader"><b>AI 场景对话</b><span style="font-size:12px;color:var(--ink2);margin-left:auto">沉浸式演练</span></div>
+  ${CHAT_SCENES.map(c=>`<div class="scen" onclick="openChat('${c.id}')">
+    <div class="ic" style="background:${c.color}"><span>${c.id==='smalltalk'?'👋':'💬'}</span></div>
+    <div class="tx"><b>${c.name}</b><p>${c.desc}</p></div><div class="cnt">进入 ›</div></div>`).join('')}
+  <div class="card" style="font-size:12px;color:var(--ink2);line-height:1.8">
+    💡 提示：对话全程用<b>语音</b>回答，AI 会识别你说的话并给出提示；打字也可以。点击 🔊 可以重听 AI 的提问。</div>`;
+}
+let chatLog=[];
+function openChat(id){
+  cur.chat=CHAT_SCENES.find(c=>c.id===id);cur.step=0;chatLog=[];
+  $('#chat-list').style.display='none';$('#chat-room').style.display='block';
+  if(cur.chat.free){botSay("Hi! I'm Coach, your AI English tutor. Let's just chat about anything you like — introduce yourself, tell me about your day, or ask me a question. Ready?",'')}
+  else botSay(cur.chat.steps[0].b,cur.chat.steps[0]);
+  renderChatUI();
+}
+function botSay(text,step){
+  chatLog.push({who:'bot',text,step});
+  renderChatUI();
+  speak(text);
+}
+function userSay(text,interim){
+  if(!interim)chatLog.push({who:'me',text});
+  renderChatUI();
+  if(!interim)handleUser(text);
+}
+function renderChatUI(){
+  const room=$('#chat-room');
+  const step=cur.chat&&!cur.chat.free?cur.chat.steps[cur.step]:null;
+  room.innerHTML=`<div class="subheader"><button class="back" onclick="renderChatList()">←</button><b>${cur.chat.name}</b>
+    <span style="font-size:12px;color:var(--ink2);margin-left:auto">${cur.chat.free?'自由模式':'步骤 '+(cur.step+1)+'/'+cur.chat.steps.length}</span></div>
+  <div class="chat-list">${chatLog.map(m=>`
+    <div class="bub ${m.who}">${esc(m.text)}
+      ${m.who==='bot'&&m.step&&m.step.hint?`<span class="zz">💡 你可以说："${esc(m.step.sample)}"</span>`:''}
+      ${m.who==='bot'?`<span class="zz"><a href="javascript:void(0)" style="color:inherit;text-decoration:underline" onclick='speak(${esc(JSON.stringify(m.text))})'>🔊 重听</a></span>`:''}
+    </div>`).join('')}
+    ${cur.typing?'<div class="bub bot"><span class="typing"><i></i><i></i><i></i></span></div>':''}
+  </div>
+  <div class="chat-actions">
+    <button class="mic-btn" style="width:64px;height:64px;font-size:24px" id="cmic" onclick="chatMic()">${cur.listening?'⏹':'🎤'}</button>
+  </div>
+  <div style="display:flex;gap:8px;margin:0 16px 16px">
+    <input id="chat-type" placeholder="也可以打字回复…" style="flex:1;border:1.5px solid var(--line);border-radius:12px;padding:11px 14px;font-size:14px;outline:none;background:#fff" onkeydown="if(event.key==='Enter')sendTyped()">
+    <button class="btn btn-red btn-sm" onclick="sendTyped()">发送</button>
+  </div>`;
+  window.scrollTo(0,document.body.scrollHeight);
+}
+function chatMic(){
+  if(cur.listening){if(activeRec)activeRec.stop();return}
+  cur.listening=true;$('#cmic')&&($('#cmic').textContent='⏹');
+  listenOnce((txt,interim)=>{
+      if(interim){userSay(txt,true)}
+      else{cur.listening=false;$('#cmic')&&($('#cmic').textContent='🎤');userSay(txt,false)}
+    },
+    ()=>{cur.listening=false;$('#cmic')&&($('#cmic').textContent='🎤')});
+}
+function sendTyped(){
+  const inp=$('#chat-type');const v=inp.value.trim();if(!v)return;
+  inp.value='';userSay(v,false);
+}
+function handleUser(text){
+  cur.typing=true;renderChatUI();
+  setTimeout(()=>{cur.typing=false;reply(text)},700);
+}
+function reply(text){
+  if(cur.chat.free){
+    const n=norm(text);
+    const hit=INTENTS.find(i=>i.k.some(k=>n.includes(k)));
+    const pool=hit?hit.r:FALLBACK;
+    botSay(pool[Math.floor(Math.random()*pool.length)],null);
+  }else{
+    const step=cur.chat.steps[cur.step];
+    const n=norm(text),ok=step.kw.some(k=>n.includes(k));
+    if(ok)record(85);
+    const praise=ok?pick(["Great job! ","Perfect! ","Nice one! ","Well said! "]):"Almost there! ";
+    cur.step++;
+    if(cur.step>=cur.chat.steps.length){
+      botSay(praise+"You've completed the whole conversation — brilliant! 🎉 Remember the key phrases we practiced today. Want to try another scenario?",null);
+      cur.chat={...cur.chat}; // 结束态
+    }else{
+      const next=cur.chat.steps[cur.step];
+      botSay(praise+(ok?"":"Tip: try saying \""+step.sample+"\". Now — ")+next.b,next);
+    }
+  }
+}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+
+/* ============================================================
+   生词本
+============================================================ */
+function renderWords(){
+  const box=$('#word-list');
+  if(!data.words.length){box.innerHTML=`<div class="empty"><div class="e">📖</div><p>生词本还是空的<br>在跟读或对话里点击 ⭐ 收藏难句</p></div>`;return}
+  box.innerHTML=data.words.map((w,i)=>`<div class="word-item">
+    <div class="w"><b>${esc(w.sc)}</b><div class="en">${esc(w.e)}</div><p>${esc(w.z)}</p></div>
+    <button class="play-mini" onclick='speak(${esc(JSON.stringify(w.e))})'>🔊</button>
+    <button class="del-mini" onclick="delWord(${i})">🗑️</button></div>`).join('');
+}
+function delWord(i){data.words.splice(i,1);save();renderWords()}
+
+/* ============================================================
+   我的
+============================================================ */
+function renderMe(){
+  $('#me-streak').textContent=data.streak;
+  $('#me-total').textContent=data.total;
+  $('#me-avg').textContent=data.scoreN?Math.round(data.scoreSum/data.scoreN)+' 分':'--';
+  $('#me-words').textContent=data.words.length;
+  $('#set-goal').value=data.goal;$('#goal-v').textContent=data.goal;
+  $('#set-rate').value=data.rate;$('#rate-v').textContent=(data.rate/10).toFixed(1)+'x';
+}
+function saveGoal(v){data.goal=+v;$('#goal-v').textContent=v;save();renderHome()}
+function saveRate(v){data.rate=+v;$('#rate-v').textContent=(v/10).toFixed(1)+'x';save()}
+
+/* ============================================================
+   PWA 安装
+============================================================ */
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('#install-state').textContent='可安装';toast('📲 可以安装到桌面了，到"我的"页点击安装')});
+function installApp(){
+  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt=null;$('#install-state').textContent='已安装'}
+  else toast('安卓 Chrome：菜单 →「添加到主屏幕/安装应用」；iPhone Safari：分享 →「添加到主屏幕」');
+}
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+speechSynthesis.getVoices(); // 预热音色列表
+
+renderHome();
+go('home');
+</script>
+</body>
+</html>
