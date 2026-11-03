@@ -869,19 +869,44 @@ function saveRate(v){data.rate=+v;$('#rate-v').textContent=(v/10).toFixed(1)+'x'
 /* ============================================================
    PWA 安装
 ============================================================ */
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('#install-state').textContent='可安装'});
+function isStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches
+      || window.matchMedia('(display-mode: minimal-ui)').matches
+      || window.navigator.standalone===true;
+}
+function setInstallState(t){const el=$('#install-state');if(el)el.textContent=t}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;setInstallState('可安装')});
+window.addEventListener('appinstalled',()=>{deferredPrompt=null;setInstallState('已安装 ✓');toast('🎉 安装成功，回桌面看看新图标')});
+/* 打开时自动判断：已在App内运行就标记已安装 */
+setTimeout(()=>{
+  if(isStandalone())setInstallState('已安装 ✓');
+  else if(navigator.getInstalledRelatedApps){
+    navigator.getInstalledRelatedApps().then(a=>{if(a&&a.length)setInstallState('已安装 ✓')}).catch(()=>{});
+  }
+},600);
 function installApp(){
-  if(deferredPrompt){
-    const p=deferredPrompt;deferredPrompt=null;
-    p.prompt();
-    p.userChoice.then(c=>{
-      if(c.outcome==='accepted'){$('#install-state').textContent='已安装 ✓';toast('🎉 已安装，回到桌面看看新图标')}
-      else{$('#install-state').textContent='可安装';toast('已取消，可再点一次重新安装')}
-    });
-  } else installSheet();
+  if(isStandalone()){setInstallState('已安装 ✓');toast('你已经在App里了，桌面图标就是它 🙂');return}
+  if(!deferredPrompt){installSheet();return}
+  const p=deferredPrompt;deferredPrompt=null;
+  let shown=false;
+  try{p.prompt();shown=true}catch(err){shown=false}
+  if(!shown){installSheet();return}
+  const done=c=>{
+    if(c&&c.outcome==='accepted'){
+      setInstallState('已安装 ✓');toast('🎉 已安装，回到桌面看看新图标');
+    }else{
+      // 弹窗被取消 / 浏览器静默拒绝（常见于已装过或浏览器限流）→ 直接给手动方案
+      setInstallState('→');
+      toast('系统没让你确认，我打开手动安装步骤');
+      installSheet();
+    }
+  };
+  if(p.userChoice&&p.userChoice.then)p.userChoice.then(done).catch(()=>installSheet());
+  else setTimeout(()=>installSheet(),800);
 }
 /* 安装指引弹层：按手机环境显示对应步骤 */
 function installSheet(){
+  const already=isStandalone();
   closeSheet();
   const ua=navigator.userAgent;
   const inWeChat=/MicroMessenger/i.test(ua), inQQ=/QQ\//i.test(ua);
@@ -913,6 +938,9 @@ function installSheet(){
       ② 点 <b>「安装应用」</b> 或 <b>「添加到主屏幕」</b><br>
       <span style="font-size:12px;color:var(--ink2)">部分手机藏在菜单「更多工具」里。装好后桌面出现独立图标，点开就是全屏应用 🎉</span></div>`;
   }
+  const tip=`<div style="font-size:13px;background:#fff6e5;border-radius:10px;padding:10px 12px;margin-bottom:14px;line-height:1.8">
+    ${already?'✅ 你现在就在App里运行，桌面图标已经存在了。':'👉 先看一眼手机桌面有没有「口语教练 / Speak Coach」图标，有就说明已经装好了（可能是上次装的）。'}</div>`;
+  html=tip+html;
   const mask=document.createElement('div');mask.className='sheet-mask';mask.id='sheet';
   mask.innerHTML=`<div class="sheet">${html}
     <button class="btn btn-red" style="width:100%;margin-top:18px" id="ip-close">我知道了</button></div>`;
