@@ -147,6 +147,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"HarmonyOS Sans SC","PingFang 
 
 /* 弹层 */
 .toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:rgba(20,20,26,.88);color:#fff;font-size:13px;padding:10px 20px;border-radius:99px;z-index:99;animation:pop .25s;white-space:nowrap}
+/* 单词点选与释义弹层 */
+.wchip{cursor:pointer;border-bottom:1.5px dashed #d5d5dc;-webkit-user-select:none;user-select:none}
+.wchip:active{background:#fdeaea;border-radius:4px}
+.sheet-mask{position:fixed;inset:0;background:rgba(15,15,22,.45);z-index:90;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .18s}
+.sheet{background:#fff;width:100%;max-width:480px;border-radius:24px 24px 0 0;padding:24px 22px calc(22px + var(--safe-b));animation:slideUp .28s;box-shadow:0 -8px 40px rgba(0,0,0,.18)}
+@keyframes slideUp{from{transform:translateY(70%);opacity:.4}to{transform:none;opacity:1}}
+.w-big{font-size:27px;font-weight:800;letter-spacing:.3px}
+.flash-card{min-height:280px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;cursor:pointer}
 @media(min-width:481px){body{background:#ececf2}#app{background:var(--bg);box-shadow:0 0 40px rgba(0,0,0,.08)}}
 </style>
 </head>
@@ -209,7 +217,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"HarmonyOS Sans SC","PingFang 
   <section class="view" data-view="words">
     <div class="topbar" style="border-radius:0">
       <h1>生词本</h1>
-      <p>收藏难句，反复听读攻克它</p>
+      <p>点词收藏 · 抽认卡复习 · 攻克每个生词</p>
     </div>
     <div id="word-list"></div>
   </section>
@@ -230,7 +238,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"HarmonyOS Sans SC","PingFang 
     <div class="card">
       <div class="set-row"><span>📅 累计练习</span><span class="v"><span id="me-total">0</span> 句</span></div>
       <div class="set-row"><span>⭐ 平均得分</span><span class="v" id="me-avg">--</span></div>
-      <div class="set-row"><span>⭐ 收藏句子</span><span class="v" id="me-words">0</span></div>
+      <div class="set-row"><span>⭐ 生词本收藏</span><span class="v" id="me-words">0</span></div>
     </div>
     <div class="card">
       <div class="set-row"><span>🎯 每日目标（句）</span>
@@ -245,7 +253,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"HarmonyOS Sans SC","PingFang 
       <div class="set-row" style="cursor:pointer" onclick="installApp()"><span>📲 安装到手机桌面</span><span style="color:var(--red);font-weight:700" id="install-state">→</span></div>
       <div class="set-row" style="cursor:pointer" onclick="if(confirm('清空所有学习记录？此操作不可恢复。')){localStorage.removeItem('aec_data');location.reload()}"><span>🗑️ 清空学习数据</span><span style="color:var(--ink2)">→</span></div>
     </div>
-    <p style="text-align:center;font-size:11px;color:var(--ink2);padding:8px 0 20px">AI口语教练 v1.0 · 纯本地运行，数据仅保存在本机</p>
+    <p style="text-align:center;font-size:11px;color:var(--ink2);padding:8px 0 20px">AI口语教练 v1.1 · 纯本地运行，数据仅保存在本机</p>
   </section>
 </div>
 
@@ -354,6 +362,86 @@ const INTENTS=[
 ];
 const FALLBACK=["Interesting! Could you tell me more about that?","I see. And how did that make you feel?","That's a good point. Could you say it in a different way?","Nice try! Here's a tip: try adding 'because...' to make your sentence longer."];
 
+/* ---------- 本地词典（覆盖语料全部生词） ---------- */
+const DICT={
+abroad:'在国外',after:'在…之后',again:'再次',agenda:'议程',ahead:'向前；在前方',
+aisle:'（座位间）过道',allergies:'过敏症',already:'已经',always:'总是',amazing:'令人惊叹的',
+analysis:'分析',any:'任何一个',anything:'任何事物',anytime:'随时',anywhere:'任何地方',
+apologies:'道歉',appreciate:'感激',around:'周围；大约',asking:'问（进行时）',away:'离开；远离',
+awkward:'尴尬的',back:'回来；背面',bad:'坏的',bag:'包',bags:'包（复数）',
+base:'基础',best:'最好的',better:'更好的',biggest:'最大的',bit:'一点儿',
+boarding:'登机',both:'两者都',breath:'呼吸',budget:'预算',business:'商业；生意',
+busy:'忙的',bye:'再见',call:'打电话；称呼',card:'卡片；银行卡',cards:'卡片（复数）',
+care:'关心；照料',catching:'赶上；catch up 叙旧',center:'中心',challenge:'挑战',chatting:'聊天',
+check:'检查；核对',checking:'办理（值机/托运）',china:'瓷器',chinese:'中文；中国的',choice:'选择',
+city:'城市',coach:'教练',coffee:'咖啡',cold:'冷的；感冒',color:'颜色',
+come:'来',consistency:'坚持；一致性',cooked:'烹煮过的',country:'国家',credit:'信用；credit card 信用卡',
+culture:'文化',daily:'每日的',data:'数据',day:'天',days:'天（复数）',
+delicious:'美味的',describe:'描述',details:'细节',difficult:'困难的',dish:'一道菜',
+doing:'做（进行时）',drink:'喝；饮料',eager:'渴望的',else:'其他的；否则',
+email:'电子邮件',english:'英语',enjoy:'享受',enough:'足够的',even:'甚至',
+ever:'曾经',every:'每一个',everything:'一切',excellent:'极好的',excuse:'打扰一下；借口',
+exhausting:'累人的',experience:'经验；经历',extend:'延长',fact:'事实',fantastic:'极好的',
+far:'远的',fascinating:'迷人的',favorite:'最喜欢的',feel:'感觉',fine:'好的',
+flight:'航班',fly:'飞；乘机',follow:'跟随',food:'食物',forward:'向前；look forward to 期待',
+free:'免费的；自由的',fun:'有趣的',gate:'登机口',get:'得到；到达',getting:'变得（进行时）',
+gift:'礼物',giving:'给（进行时）',going:'去（进行时）',good:'好的',goodbye:'再见',
+got:'get 的过去式',grammar:'语法',great:'很棒的',grilled:'烤的',hard:'努力地；困难的',
+hardest:'最难的',hear:'听见',hearing:'听见（进行时）',help:'帮助',here:'这里',
+hesitate:'犹豫',hey:'嘿',hometown:'家乡',hope:'希望',hot:'热的；辣的',
+hotel:'酒店',hungry:'饿的',iced:'冰镇的',ideal:'理想的',improving:'改进（进行时）',
+independently:'独立地',interesting:'有趣的',interrupt:'打断',job:'工作',joining:'加入',
+juice:'果汁',keep:'保持',keeps:'保持（三单）',know:'知道',larger:'更大的',
+lately:'最近',later:'稍后',learn:'学习',left:'左边的；离开',lemonade:'柠檬水',
+let:'让',like:'喜欢；像',listening:'听（进行时）',little:'小的；一点',live:'居住',
+lobby:'酒店大堂',london:'伦敦',look:'看',looking:'寻找；looking around 逛逛',love:'爱',
+lunch:'午餐',made:'make 的过去式',makes:'使得（三单）',meal:'一餐',means:'意味着',
+medium:'中等的；medium rare 三至五分熟',meet:'遇见；会面',meeting:'会议',menu:'菜单',mind:'介意',
+minutes:'分钟',mistake:'错误',mistakes:'错误（复数）',mobile:'移动的；mobile payment 移动支付',more:'更多',
+morning:'早上',most:'最；大多数',much:'很多',name:'名字',napkins:'餐巾纸',
+native:'本地的；native speaker 母语者',needed:'需要（过去式）',never:'从不',new:'新的',next:'下一个',
+nice:'好的；友好的',night:'夜晚',now:'现在',off:'休息；离开',once:'一次',
+one:'一',opportunity:'机会',order:'点餐；订购',our:'我们的',out:'出去',
+part:'部分',pass:'递；通过',passport:'护照',pay:'支付',payment:'支付方式',
+perfect:'完美的',place:'地方',plan:'计划',please:'请',pleasure:'荣幸',
+practice:'练习',prefer:'更喜欢',pressure:'压力',pretty:'相当；漂亮的',price:'价格',
+problem:'问题',pronunciation:'发音',put:'放',question:'问题',quick:'快的',
+rain:'下雨',rainy:'下雨的',rare:'稀有的；牛排三分熟',reach:'到达',ready:'准备好的',
+really:'真的',receipt:'收据',recommend:'推荐',regarding:'关于',relax:'放松',
+remember:'记住',reservation:'预订',return:'返回；退回',review:'复习；回顾',rice:'米饭',
+right:'正确的；右边',sale:'打折；on sale 促销中',salmon:'三文鱼',same:'相同的',say:'说',
+saying:'说（进行时）',schedule:'安排；日程',season:'季节',seat:'座位',second:'第二；秒',
+see:'看见',send:'发送',sentences:'句子（复数）',shoes:'鞋',shop:'购物；商店',
+should:'应该',size:'尺码',slower:'更慢的',slowly:'慢慢地',smile:'微笑',
+snow:'雪',solid:'扎实的',solving:'解决（进行时）',some:'一些',something:'某事物',
+soon:'很快',sorry:'抱歉',sounds:'听起来',speakers:'说话者（复数）',speaking:'说话',
+special:'特色菜；特别的',spicy:'辣的',start:'开始',starts:'开始（三单）',stay:'停留；入住',
+steak:'牛排',steps:'步骤',straight:'直的；径直',strength:'优势',study:'学习',
+stumble:'绊倒；出错',suitcase:'行李箱',sunny:'晴朗的',sure:'当然',swamped:'忙得不可开交的',
+table:'桌子',take:'拿；take it 买了',talking:'交谈（进行时）',tea:'茶',team:'团队',
+technologies:'技术（复数）',tell:'告诉',ten:'十',thank:'感谢',thanks:'谢谢',
+then:'然后',thing:'事情',think:'想；认为',three:'三',through:'穿过；完成',
+ticket:'票',time:'时间',timeline:'时间表',today:'今天',together:'一起',
+tomorrow:'明天',too:'也；太',topic:'话题',totally:'完全',touch:'联系；touch base 沟通',
+travel:'旅行',traveling:'旅行（进行时）',trip:'旅程',true:'真实的',try:'尝试',
+turn:'转动；turn left 左转',tutor:'导师',unclear:'不清楚的',under:'在…之下',usually:'通常',
+vacation:'假期',very:'非常',visit:'参观',voice:'声音',walk:'步行',
+want:'想要',water:'水',way:'方式；路线',weather:'天气',week:'星期',
+weekends:'周末',welcome:'欢迎',well:'好',window:'窗户',wonderful:'精彩的',
+work:'工作',world:'世界',wrap:'包装；gift-wrap 礼品包装',wrong:'错误的',years:'年（复数）',
+yes:'是的',"don't":'do not 的缩写',"here's":'here is 的缩写',"how's":'how is 的缩写',"isn't":'is not 的缩写',
+"it's":'it is 的缩写',"that's":'that is 的缩写',"today's":'today 的缩写',"we're":'we are 的缩写',
+"what's":'what is 的缩写',"you'll":'you will 的缩写',"you're":'you are 的缩写',"you've":'you have 的缩写',
+"i'd":'I would 的缩写',"i'll":'I will 的缩写',"i'm":'I am 的缩写',"i've":'I have 的缩写',"let's":'让我们',
+any:'任何一个',else:'其他的',our:'我们的',now:'现在',both:'两者都',here:'这里'
+};
+function dictLook(w){
+  if(!w)return '';
+  if(DICT[w])return DICT[w];
+  const cands=[w.replace(/'/g,''),w.replace(/ies$/,'y'),w.replace(/es$/,''),w.replace(/s$/,''),w.replace(/ed$/,''),w.replace(/ing$/,'')];
+  for(const c of cands)if(c&&c!==w&&DICT[c])return DICT[c];
+  return '';
+}
 /* ============================================================
    状态与持久化
 ============================================================ */
@@ -473,7 +561,7 @@ function renderHome(){
   const all=[];SCENARIOS.forEach(sc=>sc.s.forEach(x=>all.push({...x,sc:sc.name})));
   const seed=Number(D.replace(/-/g,''))%all.length;
   const sent=all[seed];
-  $('#daily-sentence').innerHTML=`<div class="en">${esc(sent.e)}</div><div class="zh">${esc(sent.z)} · ${sent.sc}</div>
+  $('#daily-sentence').innerHTML=`<div class="en">${chips(sent.e)}</div><div class="zh">${esc(sent.z)} · ${sent.sc}</div>
    <div style="display:flex;gap:10px;margin-top:14px">
      <button class="btn btn-ghost btn-sm" onclick="speak('${sent.e.replace(/'/g,"\\'")}')">🔊 听朗读</button>
      <button class="btn btn-red btn-sm" onclick="quickPrac(${seed})">🎤 跟读这句</button></div>`;
@@ -513,7 +601,7 @@ function renderSentence(){
    <div class="dots">${dots}</div>
    <div class="card prac-card">
      <span class="tag">第 ${cur.idx+1} / ${cur.scen.s.length} 句</span>
-     <div class="en" id="p-en">${esc(s.e)}</div>
+     <div class="en" id="p-en">${chips(s.e)}</div>
      <div class="zh">${esc(s.z)}</div>
      <div style="display:flex;gap:10px;justify-content:center;margin-top:18px">
        <button class="btn btn-ghost btn-sm" onclick='speak(${esc(JSON.stringify(s.e))})'>🔊 听标准音</button>
@@ -545,9 +633,47 @@ function nextS(){
 function starThis(){
   const s=cur.scen.s[cur.idx];
   if(data.words.some(w=>w.e===s.e)){toast('已收藏过啦');return}
-  data.words.unshift({e:s.e,z:s.z,sc:cur.scen.name,t:Date.now()});save();
+  data.words.unshift({type:'s',e:s.e,z:s.z,sc:cur.scen.name,t:Date.now()});save();
   toast('⭐ 已加入生词本');
 }
+/* ---------- 单词点选：chips 渲染 + 释义弹层 ---------- */
+function chips(en){
+  return en.split(/(\s+)/).map(tok=>{
+    const w=tok.replace(/[^A-Za-z'-]/g,'').replace(/^'+|'+$/g,'').toLowerCase();
+    if(!w)return esc(tok);
+    return `<span class="wchip" data-w="${w}">${esc(tok)}</span>`;
+  }).join('');
+}
+function wordSheet(word){
+  closeSheet();
+  const mean=dictLook(word);
+  const saved=data.words.some(w=>(w.type||'s')==='w'&&w.e===word);
+  const mask=document.createElement('div');mask.className='sheet-mask';mask.id='sheet';
+  mask.innerHTML=`<div class="sheet">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="w-big">${esc(word)}</div>
+      <button class="play-mini" style="width:44px;height:44px;font-size:18px" id="ws-play">🔊</button>
+      <span style="margin-left:auto;font-size:11px;color:var(--ink2)">点单词查词收藏</span>
+    </div>
+    <div style="margin-top:12px;font-size:15px;line-height:1.7">${mean?esc(mean):'<span style="color:var(--ink2)">该词暂无本地释义，仍可收藏练习发音</span>'}</div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn ${saved?'btn-ghost':'btn-red'}" style="flex:1" id="ws-save">${saved?'✅ 已在生词本':'⭐ 加入生词本'}</button>
+      <button class="btn btn-ghost" id="ws-close">关闭</button>
+    </div></div>`;
+  document.body.appendChild(mask);
+  mask.addEventListener('click',e=>{if(e.target===mask)closeSheet()});
+  mask.querySelector('#ws-play').addEventListener('click',()=>speak(word));
+  mask.querySelector('#ws-close').addEventListener('click',closeSheet);
+  const sv=mask.querySelector('#ws-save');
+  sv.addEventListener('click',()=>{
+    if(data.words.some(w=>(w.type||'s')==='w'&&w.e===word)){toast('已在生词本中');return}
+    data.words.unshift({type:'w',e:word,z:mean,sc:'单词',t:Date.now()});save();
+    toast('⭐ 已加入生词本');sv.textContent='✅ 已在生词本';sv.className='btn btn-ghost';
+    if(cur.tab==='words')renderWords();
+  });
+}
+function closeSheet(){const s=document.getElementById('sheet');if(s)s.remove()}
+document.addEventListener('click',e=>{const c=e.target.closest('.wchip');if(c)wordSheet(c.dataset.w)});
 function micTap(){
   if(cur.listening){if(activeRec)activeRec.stop();return}
   const s=cur.scen.s[cur.idx];
@@ -578,12 +704,12 @@ function micDone(){
 function showResult(score,mask,en){
   micDone();
   record(score);
-  const tw=words(en).map((w,i)=>`<span class="${mask[i]?'w-ok':'w-miss'}">${esc(w)}</span>`).join(' ');
+  const tw=words(en).map((w,i)=>`<span class="${mask[i]?'w-ok':'w-miss'} wchip" data-w="${w}">${esc(w)}</span>`).join(' ');
   const st=starsOf(score),stars='⭐'.repeat(st)+'☆'.repeat(3-st);
   $('#p-result').innerHTML=`<div class="result">
     <div class="score-c"><div><div class="score-big" style="color:${score>=75?'var(--green)':score>=50?'var(--orange)':'#e0483e'}">${score}</div><div class="stars">${stars}</div></div>
     <div class="verdict">${verdictOf(score)}</div></div>
-    <div style="font-size:11.5px;color:var(--ink2);text-align:center;margin-bottom:6px">标准句（<span class="w-ok">绿色</span> 读对了 · <span class="w-miss">红色</span> 需改进）</div>
+    <div style="font-size:11.5px;color:var(--ink2);text-align:center;margin-bottom:6px">标准句（<span class="w-ok">绿</span>=读对 · <span class="w-miss">红</span>=需改进）· 点单词可查词收藏</div>
     <div class="wdiff" style="text-align:center">${tw}</div></div>`;
   if(cur.tab==='home'||cur.tab==='me')return;
 }
@@ -684,13 +810,48 @@ function pick(a){return a[Math.floor(Math.random()*a.length)]}
 ============================================================ */
 function renderWords(){
   const box=$('#word-list');
-  if(!data.words.length){box.innerHTML=`<div class="empty"><div class="e">📖</div><p>生词本还是空的<br>在跟读或对话里点击 ⭐ 收藏难句</p></div>`;return}
-  box.innerHTML=data.words.map((w,i)=>`<div class="word-item">
-    <div class="w"><b>${esc(w.sc)}</b><div class="en">${esc(w.e)}</div><p>${esc(w.z)}</p></div>
-    <button class="play-mini" onclick='speak(${esc(JSON.stringify(w.e))})'>🔊</button>
-    <button class="del-mini" onclick="delWord(${i})">🗑️</button></div>`).join('');
+  if(!data.words.length){box.innerHTML=`<div class="empty"><div class="e">📖</div><p>生词本还是空的<br>跟读时点击句子里的单词，或点 ⭐ 收藏整句</p></div>`;return}
+  box.innerHTML=`<div style="margin:14px 16px 4px"><button class="btn btn-red" style="width:100%" onclick="startFlash()">🎯 抽认卡复习（共 ${data.words.length} 项）</button></div>`+
+  data.words.map((w,i)=>`<div class="word-item">
+    <div class="w">${w.type==='w'
+      ?`<b style="font-size:17px">${esc(w.e)}</b><p style="color:var(--red);font-size:13.5px;font-weight:600">${esc(w.z||'')}</p>`
+      :`<b>${esc(w.sc)}</b><div class="en">${esc(w.e)}</div><p>${esc(w.z||'')}</p>`}</div>
+    <button class="play-mini">🔊</button>
+    <button class="del-mini">🗑️</button></div>`).join('');
+  box.querySelectorAll('.word-item').forEach((item,i)=>{
+    const w=data.words[i];
+    item.querySelector('.play-mini').addEventListener('click',()=>speak(w.e));
+    item.querySelector('.del-mini').addEventListener('click',()=>delWord(i));
+  });
 }
 function delWord(i){data.words.splice(i,1);save();renderWords()}
+/* ---------- 抽认卡复习 ---------- */
+let flash=null;
+function startFlash(){
+  flash={list:[...data.words].sort(()=>Math.random()-.5),i:0,known:0,unknown:0,flip:false};
+  renderFlash();
+}
+function renderFlash(){
+  const box=$('#word-list');
+  const w=flash.list[flash.i];
+  if(!w){box.innerHTML=`<div class="empty"><div class="e">🎉</div><p>本轮复习完成！<br>已掌握 ${flash.known} 项 · 待巩固 ${flash.unknown} 项</p></div><div style="text-align:center"><button class="btn btn-red btn-sm" onclick="renderWords()">返回列表</button></div>`;return}
+  const isWord=w.type==='w';
+  const front=esc(w.e);
+  const back=isWord?esc(w.z||'（无释义）'):esc(w.z||'');
+  box.innerHTML=`<div class="card flash-card" id="fcard">
+      <div style="font-size:12px;color:var(--ink2)">${flash.i+1} / ${flash.list.length} · 点卡片翻面</div>
+      <div style="font-size:${isWord?'30px':'19px'};font-weight:800;line-height:1.5;margin:20px 0;text-align:center">${flash.flip?back:front}</div>
+      <div id="fspeak" style="display:${flash.flip?'block':'none'}"><button class="btn btn-ghost btn-sm" id="fplay">🔊 听发音</button></div>
+    </div>
+    <div style="display:flex;gap:10px;margin:0 16px 4px">
+      <button class="btn" style="flex:1;background:#e8f5e9;color:var(--green)" id="fno">😕 还不熟</button>
+      <button class="btn btn-red" style="flex:1" id="fyes">😀 已掌握</button>
+    </div>`;
+  $('#fcard').addEventListener('click',()=>{flash.flip=!flash.flip;renderFlash()});
+  $('#fplay').addEventListener('click',e=>{e.stopPropagation();speak(w.e)});
+  $('#fno').addEventListener('click',()=>{flash.unknown++;flash.flip=false;flash.i++;renderFlash()});
+  $('#fyes').addEventListener('click',()=>{flash.known++;flash.flip=false;flash.i++;renderFlash()});
+}
 
 /* ============================================================
    我的
