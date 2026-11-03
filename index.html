@@ -253,7 +253,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"HarmonyOS Sans SC","PingFang 
       <div class="set-row" style="cursor:pointer" onclick="installApp()"><span>📲 安装到手机桌面</span><span style="color:var(--red);font-weight:700" id="install-state">→</span></div>
       <div class="set-row" style="cursor:pointer" onclick="if(confirm('清空所有学习记录？此操作不可恢复。')){localStorage.removeItem('aec_data');location.reload()}"><span>🗑️ 清空学习数据</span><span style="color:var(--ink2)">→</span></div>
     </div>
-    <p style="text-align:center;font-size:11px;color:var(--ink2);padding:8px 0 20px">AI口语教练 v1.1 · 纯本地运行，数据仅保存在本机</p>
+    <p style="text-align:center;font-size:11px;color:var(--ink2);padding:8px 0 20px">AI口语教练 v1.2 · 纯本地运行，数据仅保存在本机</p>
   </section>
 </div>
 
@@ -870,10 +870,49 @@ function saveRate(v){data.rate=+v;$('#rate-v').textContent=(v/10).toFixed(1)+'x'
 /* ============================================================
    PWA 安装
 ============================================================ */
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('#install-state').textContent='可安装';toast('📲 可以安装到桌面了，到"我的"页点击安装')});
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('#install-state').textContent='可安装'});
 function installApp(){
-  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt=null;$('#install-state').textContent='已安装'}
-  else toast('安卓 Chrome：菜单 →「添加到主屏幕/安装应用」；iPhone Safari：分享 →「添加到主屏幕」');
+  if(deferredPrompt){
+    const p=deferredPrompt;deferredPrompt=null;
+    p.prompt();
+    p.userChoice.then(c=>{
+      if(c.outcome==='accepted'){$('#install-state').textContent='已安装 ✓';toast('🎉 已安装，回到桌面看看新图标')}
+      else{$('#install-state').textContent='可安装';toast('已取消，可再点一次重新安装')}
+    });
+  } else installSheet();
+}
+/* 安装指引弹层：按手机环境显示对应步骤 */
+function installSheet(){
+  closeSheet();
+  const ua=navigator.userAgent;
+  const inWeChat=/MicroMessenger/i.test(ua), inQQ=/QQ\//i.test(ua);
+  const isIOS=/iPhone|iPad|iPod/i.test(ua);
+  let html;
+  if(inWeChat||inQQ){
+    html=`<div style="font-size:15px;line-height:2.1">
+      <b>😅 检测到你在微信/QQ内打开，这里没法安装</b><br>
+      ① 点右上角 <b style="font-size:20px">「···」</b><br>
+      ② 选 <b>「在浏览器打开」</b>（选 Chrome 或 Edge）<br>
+      ③ 在浏览器里打开本页，再点「安装到手机桌面」</div>`;
+  } else if(isIOS){
+    html=`<div style="font-size:15px;line-height:2.1">
+      <b>iPhone 安装三步（请先用 Safari 打开本页）</b><br>
+      ① 点底部工具栏中间的 <b>「分享」</b> 按钮（方框加向上箭头 ⬆️）<br>
+      ② 往下滑，点 <b>「添加到主屏幕」</b><br>
+      ③ 点右上角 <b>「添加」</b>，桌面就有独立图标了 🎉</div>`;
+  } else {
+    html=`<div style="font-size:15px;line-height:2.1">
+      <b>安卓手机安装两步</b><br>
+      ① 点浏览器右上角菜单 <b style="font-size:20px">「⋮」</b>（Edge 是 <b style="font-size:18px">「…」</b>）<br>
+      ② 点 <b>「安装应用」</b> 或 <b>「添加到主屏幕」</b><br>
+      <span style="font-size:12px;color:var(--ink2)">部分手机藏在菜单「更多工具」里。装好后桌面出现独立图标，点开就是全屏应用 🎉</span></div>`;
+  }
+  const mask=document.createElement('div');mask.className='sheet-mask';mask.id='sheet';
+  mask.innerHTML=`<div class="sheet">${html}
+    <button class="btn btn-red" style="width:100%;margin-top:18px" id="ip-close">我知道了</button></div>`;
+  document.body.appendChild(mask);
+  mask.addEventListener('click',e=>{if(e.target===mask)closeSheet()});
+  mask.querySelector('#ip-close').addEventListener('click',closeSheet);
 }
 if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
