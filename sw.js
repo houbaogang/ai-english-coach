@@ -1,4 +1,4 @@
-const CACHE = 'speak-coach-v3';
+const CACHE = 'speak-coach-v4';
 const ASSETS = [
   './',
   './index.html',
