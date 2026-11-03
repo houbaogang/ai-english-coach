@@ -1,15 +1,18 @@
-const CACHE = 'speak-coach-v4';
+const CACHE = 'speak-coach-v5';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icon.svg',
-  './icons/icon-192.png',
-  './icons/icon-512.png'
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  // 逐个缓存，单个失败不阻塞安装（否则 SW 装不上，PWA 就无法安装）
+  e.waitUntil(caches.open(CACHE).then(c =>
+    Promise.allSettled(ASSETS.map(a => c.add(a)))
+  ));
   self.skipWaiting();
 });
 
