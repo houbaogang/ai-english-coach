@@ -11,7 +11,7 @@
 <title>AI口语教练 · 流利英语说出来</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
 :root{
   --red:#c7000b; --red-deep:#a00009; --red-grad:linear-gradient(135deg,#e8342a,#c7000b);
@@ -449,16 +449,12 @@ const D=new Date().toISOString().slice(0,10);
 let data=JSON.parse(localStorage.getItem('aec_data')||'null')||{
   streak:0,lastDay:'',todayCount:0,total:0,scoreSum:0,scoreN:0,words:[],goal:10,rate:10,history:{}
 };
-if(data.lastDay!==D){ if(data.lastDay&&isYest(data.lastDay)&&data.todayCount>0){} else if(data.lastDay!==D){} }
 function isYest(d){const y=new Date(Date.now()-864e5).toISOString().slice(0,10);return d===y}
 function save(){localStorage.setItem('aec_data',JSON.stringify(data))}
-function countToday(){
-  if(data.lastDay!==D){ // 新的一天
-    if(isYest(data.lastDay)&&data.todayCount>0) data.streak=data.streak; // 保留，若昨天有打卡
-    if(!(isYest(data.lastDay)&&data.todayCount>0)) data.streak=0;
-    data.todayCount=0; data.lastDay=D;
-  }
-}
+/* 有效连续天数：今天练过，或昨天练过（还没断），才显示 streak */
+function effStreak(){return(data.lastDay===D||isYest(data.lastDay))?data.streak:0}
+/* 只做展示层的当天计数归零，不动 streak 与 lastDay */
+function countToday(){ if(data.lastDay!==D) data.todayCount=0 }
 countToday();
 
 let cur={tab:'home',scen:null,idx:0,chat:null,step:0,listening:false,lastTranscript:''};
@@ -536,10 +532,9 @@ function verdictOf(sc){return sc>=90?'完美！发音地道 🎉':sc>=75?'很棒
 
 /* ---------- 学习记录 ---------- */
 function record(score){
-  countToday();
-  data.todayCount++;data.total++;
-  if(data.todayCount===1){data.streak=(isYest(data.lastDay))?data.streak+1:1}
-  data.lastDay=D;
+  if(data.lastDay===D){ data.todayCount++ }
+  else { data.streak=(isYest(data.lastDay)?data.streak+1:1); data.todayCount=1; data.lastDay=D }
+  data.total++;
   data.scoreSum+=score;data.scoreN++;
   save();
 }
@@ -549,7 +544,7 @@ function record(score){
 ============================================================ */
 function renderHome(){
   countToday();save();
-  $('#h-streak').textContent=data.streak;
+  $('#h-streak').textContent=effStreak();
   $('#h-today').textContent=data.todayCount;
   $('#h-goal').textContent=data.goal;
   $('#h-total').textContent=data.total;
@@ -570,10 +565,14 @@ function renderHome(){
     .map(m=>`<div class="mod" onclick="go('${m[0]}')"><div class="ic">${m[1]}</div><div class="nm">${m[2]}</div></div>`).join('');
 }
 function quickPrac(seed){
-  go('practice');cur.scen=SCENARIOS.find(s=>s.id==='daily');
-  // 直接进入跟读这一句对应的临时会话
-  const all=[];SCENARIOS.forEach(sc=>sc.s.forEach(x=>all.push(x)));
-  cur.quickIdx=seed;openSession();
+  // seed 是全量句子索引，需要反查它属于哪个场景、场景内第几句
+  const all=[];SCENARIOS.forEach(sc=>sc.s.forEach((x,i)=>all.push({sid:sc.id,i})));
+  const t=all[seed]||all[0];
+  go('practice');
+  cur.scen=SCENARIOS.find(s=>s.id===t.sid);
+  cur.quickIdx=null;cur.idx=t.i;
+  $('#prac-list').style.display='none';$('#prac-session').style.display='block';
+  renderSentence();
 }
 
 /* ============================================================
@@ -589,7 +588,7 @@ function renderScenList(){
 }
 function openScen(id){cur.scen=SCENARIOS.find(s=>s.id===id);cur.quickIdx=null;openSession()}
 function openSession(){
-  cur.idx=cur.quickIdx!=null?(cur.quickIdx%cur.scen.s.length):0;
+  cur.idx=0;
   $('#prac-list').style.display='none';$('#prac-session').style.display='block';
   renderSentence();
 }
@@ -857,7 +856,7 @@ function renderFlash(){
    我的
 ============================================================ */
 function renderMe(){
-  $('#me-streak').textContent=data.streak;
+  $('#me-streak').textContent=effStreak();
   $('#me-total').textContent=data.total;
   $('#me-avg').textContent=data.scoreN?Math.round(data.scoreSum/data.scoreN)+' 分':'--';
   $('#me-words').textContent=data.words.length;
