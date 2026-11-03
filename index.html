@@ -887,6 +887,7 @@ function installSheet(){
   const ua=navigator.userAgent;
   const inWeChat=/MicroMessenger/i.test(ua), inQQ=/QQ\//i.test(ua);
   const isIOS=/iPhone|iPad|iPod/i.test(ua);
+  const isMobile=/Android|iPhone|iPad|iPod|Mobile/i.test(ua);
   let html;
   if(inWeChat||inQQ){
     html=`<div style="font-size:15px;line-height:2.1">
@@ -900,6 +901,12 @@ function installSheet(){
       ① 点底部工具栏中间的 <b>「分享」</b> 按钮（方框加向上箭头 ⬆️）<br>
       ② 往下滑，点 <b>「添加到主屏幕」</b><br>
       ③ 点右上角 <b>「添加」</b>，桌面就有独立图标了 🎉</div>`;
+  } else if(!isMobile){
+    html=`<div style="font-size:15px;line-height:2.1">
+      <b>💻 这是电脑浏览器，安装需要用手机</b><br>
+      在手机微信里收到链接后，按手机上的指引操作：<br>
+      ① 微信内：点右上角「···」→「在浏览器打开」<br>
+      ② 打开本页后，在「我的」页点「安装到手机桌面」</div>`;
   } else {
     html=`<div style="font-size:15px;line-height:2.1">
       <b>安卓手机安装两步</b><br>
